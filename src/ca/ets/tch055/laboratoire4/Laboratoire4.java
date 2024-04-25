@@ -90,8 +90,21 @@ public class Laboratoire4 {
      * @param codeSession
      */
     public static void listeCoursSession(int codeSession) {
-        // TODO : compléter ici
-        System.err.println("Il faut implémenter la méthode listeCoursSession()");
+        CREATE OR REPLACE FUNCTION listeCoursSession(code_session INT)
+        RETURN TABLE(sigle TEXT) AS
+        BEGIN
+
+        IF NOT EXISTS (SELECT 1 FROM SessionETS WHERE code_session = code_session) THEN
+        RAISE EXCEPTION 'Code de session pas trouve';
+        END IF;
+        
+        RETURN QUERY 
+        SELECT DISTINCT GroupeCours.sigle
+        FROM GroupCours
+        INNER JOIN SessionETS ON GroupeCours.code_session = SessionETS.code_session
+        WHERE SessionETS.code_session = code_session;
+        END;
+        /
 
     } // listeCoursSession()
 
