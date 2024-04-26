@@ -2,19 +2,19 @@ package ca.ets.tch055.laboratoire4;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 
-
 /**
  * Classe principale du laboratoire 4
  *
  * @author el hachemi Alikacem
  * @author Pamella Kissok
- * Version 2
+ *         Version 2
  */
 public class Laboratoire4 {
 
@@ -90,29 +90,29 @@ public class Laboratoire4 {
      * @param codeSession
      */
     public static void listeCoursSession(int codeSession) {
-        CREATE OR REPLACE FUNCTION listeCoursSession(code_session INT)
-        RETURN TABLE(sigle TEXT) AS
-        BEGIN
+        try {
+            Connection connection = connexionBDD(login, password, uri);
+            Statement requete = connection.createStatement();
+            ResultSet resultats = requete.executeQuery("SELECT DISTINCT GroupeCours.sigle FROM GroupeCours INNER JOIN SessionETS ON GroupeCours.code_session = SessionETS.code_session WHERE SessionETS.code_session = " + codeSession);
+            if(!resultats.next()){
+                System.out.println("Pas de cours offerts pour cette session");
+            }
+            else{
+                do{
+                    System.out.println(resultats.getString("sigle"));
+                }while(resultats.next());
+            }
 
-        IF NOT EXISTS (SELECT 1 FROM SessionETS WHERE code_session = code_session) THEN
-        RAISE EXCEPTION 'Code de session pas trouve';
-        END IF;
-        
-        RETURN QUERY 
-        SELECT DISTINCT GroupeCours.sigle
-        FROM GroupCours
-        INNER JOIN SessionETS ON GroupeCours.code_session = SessionETS.code_session
-        WHERE SessionETS.code_session = code_session;
-        END;
-        /
 
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     } // listeCoursSession()
-
 
     // ------------------------------------------------------------------------------
 
     /**
-     * Question 2 -  calcule et affiche le cout d'une session pour un étudiant
+     * Question 2 - calcule et affiche le cout d'une session pour un étudiant
      *
      * @param codeSession
      * @param nom
@@ -127,7 +127,7 @@ public class Laboratoire4 {
     // ------------------------------------------------------------------------------
 
     /**
-     * Question 3 -  Ajoute un cours dans la base de données
+     * Question 3 - Ajoute un cours dans la base de données
      *
      * @param newSigle
      * @param titreCours
@@ -135,7 +135,7 @@ public class Laboratoire4 {
      * @param listPrealable
      */
     public static void AjoutCours(String newSigle, String titreCours,
-                                  int nbreCredit, ArrayList<String> listPrealable) {
+            int nbreCredit, ArrayList<String> listPrealable) {
 
         // TODO : compléter ici
         System.err.println("Il faut implémenter la méthode AjoutCours()");
@@ -166,7 +166,6 @@ public class Laboratoire4 {
 
     }
 
-
     // ------------------------------------------------------------------------------
 
     /**
@@ -185,8 +184,7 @@ public class Laboratoire4 {
         }
 
         return res;
-    } //  toArrayList()
-
+    } // toArrayList()
 
     // ------------------------------------------------------------------------------
 
