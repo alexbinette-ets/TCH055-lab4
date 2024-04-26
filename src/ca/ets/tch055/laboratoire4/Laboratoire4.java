@@ -180,7 +180,6 @@ public class Laboratoire4 {
 
         } catch (SQLException e) {
             try {
-                System.err.println("erreur dans la trans : " + e.getMessage());
                 connexion.rollback();
                 System.out.println("Rollback de transaction, erreur dans l'ajout.");
             } catch (SQLException ex) {
@@ -198,8 +197,85 @@ public class Laboratoire4 {
      */
     public static void calculCote() {
 
-        // TODO : compléter ici
-        System.err.println("Il faut implémenter la méthode calculCote()");
+        ArrayList<Integer> notes = new ArrayList<>();
+        ArrayList<Character> cotes = new ArrayList<>();
+
+        try {
+            //Preparation Requête
+
+            //GET LES ID POUR PAS OVERWRITE LA BD EVERYTIME!
+            ArrayList<String> codesPermanents = new ArrayList<>();
+            ArrayList<String> sigles = new ArrayList<>();
+
+            String selectQuery = "SELECT DISTINCT code_permanent, sigle, note FROM Inscription";
+            PreparedStatement ps = connexion.prepareStatement(selectQuery);
+            ResultSet resultats = ps.executeQuery();
+
+            while (resultats.next()) {
+                String codePermanent = resultats.getString("code_permanent");
+                String sigle = resultats.getString("sigle");
+                Integer note = resultats.getInt("note");
+
+                if (resultats.wasNull()) {
+                    notes.add(null);
+                } else {
+                    notes.add(note);
+                }
+                codesPermanents.add(codePermanent);
+                sigles.add(sigle);
+            }
+
+            // Fermer requete de fetch
+            resultats.close();
+            ps.close();
+
+            for (Integer noteCheck : notes) {
+                char cote;
+                if (noteCheck != null) {
+                    int noteValue = noteCheck.intValue();
+                    if (noteValue >= 90 && noteValue <= 100) {
+                        cote = 'A';
+                    } else if (noteValue >= 80 && noteValue < 90) {
+                        cote = 'B';
+                    } else if (noteValue >= 70 && noteValue < 80) {
+                        cote = 'C';
+                    } else if (noteValue >= 60 && noteValue < 70) {
+                        cote = 'D';
+                    } else {
+                        cote = 'E';
+                    }
+                } else {
+                    cote = 'N';
+                }
+                cotes.add(cote);
+            }
+
+            //Maintenant les cles correspondent avec les cotes, on peut les inserer dans l'ordre
+            String update = "UPDATE Inscription SET cote = ? WHERE code_permanent = ? AND sigle = ?";
+            PreparedStatement insertionStatement = connexion.prepareStatement(update);
+            int rowCount = 0;
+            //inserer dans la base de données
+            for (int i = 0; i < cotes.size(); i++) {
+                char coteAInserer = cotes.get(i);
+                String codePermanent = codesPermanents.get(i);
+                String sigle = sigles.get(i);
+
+                //System.out.println("cote insere : " + coteAInserer);
+                insertionStatement.setString(1, String.valueOf(coteAInserer));
+                insertionStatement.setString(2, codePermanent);
+                insertionStatement.setString(3, sigle);
+                insertionStatement.executeUpdate();
+                rowCount++;
+            }
+
+
+            System.out.println("Nombre de cotes ajouté : " + rowCount);
+
+            insertionStatement.close();
+        } catch (SQLException e) {
+            System.out.println("Erreur lors du calcul de cote" + e.getMessage());
+            e.printStackTrace();
+        }
 
     } // méthode calculCote()
 
@@ -210,8 +286,82 @@ public class Laboratoire4 {
      */
     public static void statistiqueCours() {
 
-        // TODO : compléter ici
-        System.err.println("Il faut implémenter la méthode statistiqueCours()");
+
+        try {
+            //Preparation RequÃªte
+            ArrayList<String> sigles = new ArrayList<>();
+            ArrayList<Integer> nbInscriptions = new ArrayList<>();
+            ArrayList<Integer> nbEtudiants80Pl= new ArrayList<>();
+            ArrayList<Integer> notesMinimales= new ArrayList<>();
+            ArrayList<Integer> notesMaximales= new ArrayList<>();
+            ArrayList<Double> moyenneNotes= new ArrayList<>();
+
+
+            String selectQuery = "SELECT sigle FROM Inscription";
+            PreparedStatement ps = connexion.prepareStatement(selectQuery);
+            ResultSet resultats = ps.executeQuery();
+
+            while (resultats.next()) {
+                String sigle = resultats.getString("sigle");
+                sigles.add(sigle);
+            }
+
+            resultats.close();
+            ps.close();
+
+            for (String sigleCheck : sigles) {
+
+                //--1--
+                String nbInscri = "COUNT(note) FROM Inscription WHERE sigle =" + sigleCheck + "";
+                PreparedStatement ps1 = connexion.prepareStatement(nbInscri);
+                ResultSet resultatsnbInscription = ps1.executeQuery();
+                int totalInscription = resultatsnbInscription.getInt(1);
+                nbInscriptions.add(totalInscription);
+                System.out.println("totalInscription" + totalInscription);
+                resultatsnbInscription.close();
+                ps1.close();
+
+                //--2--
+                String nbEtudiant80 = "SELECT COUNT(*) FROM Inscription WHERE note >= 80 WHERE sigle=" + sigleCheck + "";
+                PreparedStatement ps2 = connexion.prepareStatement(nbEtudiant80);
+                ResultSet resultatsnbEtudiants80 = ps2.executeQuery();
+                int totalnbEtudiants80 = resultatsnbEtudiants80.getInt(1);
+                nbEtudiants80Pl.add(totalnbEtudiants80);
+                System.out.println("totaletudaint80 : " + totalnbEtudiants80);
+                resultatsnbEtudiants80.close();
+                ps2.close();
+
+                //--3--
+                String noteMinimaleMaximale = "SELECT MIN(note), MAX(note) FROM Inscription WHERE sigle=" + sigleCheck + "";
+                PreparedStatement ps3 = connexion.prepareStatement(noteMinimaleMaximale);
+                ResultSet resultatNotesMinMax = ps3.executeQuery();
+                int noteMinimale = resultatNotesMinMax.getInt(1);
+                notesMinimales.add(noteMinimale);
+                int noteMaximale = resultatNotesMinMax.getInt(2);
+                notesMaximales.add(noteMaximale);
+                System.out.println("Note Min : " + noteMinimale + "\n NOTE MAX : " + noteMaximale);
+                resultatNotesMinMax.close();
+                ps3.close();
+
+
+                //--4--
+                String moyenneNotesString = "SELECT AVG(note) FROM Inscription WHERE sigle=" + sigleCheck + "";
+                PreparedStatement ps4 = connexion.prepareStatement(moyenneNotesString);
+                ResultSet moyenneresults = ps4.executeQuery();
+                double moyenne = moyenneresults.getInt(1);
+                moyenneNotes.add(moyenne);
+                System.out.println("MOYENNE  " + moyenne);
+                moyenneresults.close();
+                ps4.close();
+            }
+        }
+
+
+
+        catch (SQLException e) {
+            System.out.println("Erreur lors du calcul de cote" + e.getMessage());
+            e.printStackTrace();
+        }
 
     }
 
