@@ -1,20 +1,17 @@
 package ca.ets.tch055.laboratoire4;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.StringTokenizer;
+
 
 /**
  * Classe principale du laboratoire 4
  *
  * @author el hachemi Alikacem
  * @author Pamella Kissok
- *         Version 2
+ * Version 2
  */
 public class Laboratoire4 {
 
@@ -108,25 +105,53 @@ public class Laboratoire4 {
         }
     } // listeCoursSession()
 
+
     // ------------------------------------------------------------------------------
 
     /**
-     * Question 2 - calcule et affiche le cout d'une session pour un étudiant
+     * Question 2 -  calcule et affiche le cout d'une session pour un étudiant
      *
      * @param codeSession
      * @param nom
      * @param prenom
      */
     public static void coutSession(int codeSession, String nom, String prenom) {
-        // TODO : compléter ici
-        System.err.println("Il faut implémenter la méthode coutSession()");
+
+        String request = "SELECT SUM(C.nb_credits) FROM Etudiant E JOIN Inscription I ON E.code_permanent = I.code_permanent JOIN GroupeCours GC ON GC.sigle = I.sigle AND GC.no_groupe=I.no_groupe AND GC.code_session=I.code_session JOIN Cours C on C.sigle = GC.sigle WHERE I.code_session = ? AND E.nom = ? AND E.prenom = ?";
+
+        try {
+            connexion.setAutoCommit(false);
+            PreparedStatement statement = connexion.prepareStatement(request);
+            statement.setString(1, String.valueOf(codeSession));
+            statement.setString(2, nom);
+            statement.setString(3, prenom);
+            ResultSet resultSet = statement.executeQuery();
+            connexion.commit();
+
+            if (resultSet.next()) {
+                double sum = resultSet.getInt(1) * 155.77 ;
+                System.out.println(String.format("Étudiant : %s %s Session : %d Cout Session : %.2f$",prenom,nom,codeSession,sum));
+            } else {
+                System.out.println("Étudiant introuvable!");
+            }
+
+
+        } catch (SQLException e) {
+            try {
+                System.err.println("erreur dans la trans : " + e.getMessage());
+                connexion.rollback();
+                System.out.println("Rollback de transaction, erreur dans le calcul.");
+            } catch (SQLException ex) {
+                System.err.println("Problème dans le rollback de la transaction" + ex.getMessage());
+            }
+        }
 
     } // méthode coutSession()
 
     // ------------------------------------------------------------------------------
 
     /**
-     * Question 3 - Ajoute un cours dans la base de données
+     * Question 3 -  Ajoute un cours dans la base de données
      *
      * @param newSigle
      * @param titreCours
@@ -134,10 +159,35 @@ public class Laboratoire4 {
      * @param listPrealable
      */
     public static void AjoutCours(String newSigle, String titreCours,
-            int nbreCredit, ArrayList<String> listPrealable) {
+                                  int nbreCredit, ArrayList<String> listPrealable) {
 
-        // TODO : compléter ici
-        System.err.println("Il faut implémenter la méthode AjoutCours()");
+        String queryCours = String.format("insert into Cours (sigle, titre, nb_credits) values ('%s','%s',%d)",
+                newSigle,titreCours,nbreCredit);
+
+        try {
+            connexion.setAutoCommit(false);
+            Statement statement = connexion.createStatement();
+            statement.executeUpdate(queryCours);
+
+            for(String prealable : listPrealable){
+                String queryPrealables = String.format("insert into Prealable (sigle, sigle_prealable) values ('%s','%s')",newSigle,prealable);
+                Statement statement2 = connexion.createStatement();
+                statement2.executeUpdate(queryPrealables);
+            };
+
+            connexion.commit();
+            System.out.println("Ajout complété avec succès");
+
+        } catch (SQLException e) {
+            try {
+                System.err.println("erreur dans la trans : " + e.getMessage());
+                connexion.rollback();
+                System.out.println("Rollback de transaction, erreur dans l'ajout.");
+            } catch (SQLException ex) {
+                System.err.println("Problème dans le rollback de la transaction" + ex.getMessage());
+            }
+        }
+
 
     } // methode AjoutCours()
 
@@ -165,6 +215,7 @@ public class Laboratoire4 {
 
     }
 
+
     // ------------------------------------------------------------------------------
 
     /**
@@ -183,7 +234,8 @@ public class Laboratoire4 {
         }
 
         return res;
-    } // toArrayList()
+    } //  toArrayList()
+
 
     // ------------------------------------------------------------------------------
 
@@ -309,4 +361,4 @@ public class Laboratoire4 {
     } // main()
 }
 
-}
+
