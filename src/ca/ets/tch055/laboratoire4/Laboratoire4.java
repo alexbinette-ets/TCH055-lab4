@@ -91,8 +91,7 @@ public class Laboratoire4 {
      */
     public static void listeCoursSession(int codeSession) {
         try {
-            Connection connection = connexionBDD(login, password, uri);
-            Statement requete = connection.createStatement();
+            Statement requete = connexion.createStatement();
             ResultSet resultats = requete.executeQuery("SELECT DISTINCT GroupeCours.sigle FROM GroupeCours INNER JOIN SessionETS ON GroupeCours.code_session = SessionETS.code_session WHERE SessionETS.code_session = " + codeSession);
             if(!resultats.next()){
                 System.out.println("Pas de cours offerts pour cette session");
